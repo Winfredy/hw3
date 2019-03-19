@@ -1,0 +1,459 @@
+lab3
+
+子函数：
+
+%画直方图：
+function y=DrawHistogram(x,k)  %y为输出直方图 x为输入图像矩阵 k为输入图像的比特数
+k=8;%k为图像像素比特数
+[row,column]=size(x);
+y=zeros(1,2^k);
+for i=1:row
+    for j=1:column
+        y(x(i,j)+1)=y(x(i,j)+1)+1;
+    end
+end
+m=0:2^k-1;
+n=y(m+1);
+figure
+bar(m,n,'b')           %绘制直方图
+axis([0 2^k-1 0 max(y)])
+
+%直方图均衡
+function P=HistoEqual(x) %x为输入图像
+k=8;%k为图像像素比特数
+[row,column]=size(x);
+y=zeros(1,2^k);
+for i=1:row
+    for j=1:column
+        y(x(i,j)+1)=y(x(i,j)+1)+1;
+    end
+end
+T=zeros(1,2^k);
+P=zeros(row,column);
+n=0;
+for m=1:2^k
+    n=n+y(m);
+    T(m)=round((2^k-1)/row/column*n);
+end
+for i=1:row
+    for j=1:column
+        P(i,j)=T(x(i,j)+1);
+    end
+end
+figure
+imshow(P,[0,255])
+
+%直方图匹配
+function P=HistoMatch(P1,P2) %P1为原图像 P2为匹配模板 
+k=8 ;%图像比特数
+[row,column]=size(P1);
+P=zeros(row,column);
+y1=zeros(1,2^k);
+y2=zeros(1,2^k);
+for i=1:row
+    for j=1:column
+        y1(P1(i,j)+1)=y1(P1(i,j)+1)+1;
+        y2(P2(i,j)+1)=y2(P2(i,j)+1)+1;
+    end
+end
+T=zeros(1,2^k);
+G=zeros(1,2^k);
+n1=0;
+n2=0;
+for r=1:2^k
+    n1=n1+y1(r);
+    n2=n2+y2(r);
+    T(r)=round((2^k-1)/row/column*n1);
+    G(r)=round((2^k-1)/row/column*n2);
+end
+for i=1:row
+    for j=1:column
+        [m,n]=find(G==T(P1(i,j)+1));
+        h=1;
+        l=1;
+        %此部分防止G中无T(P1(i,j)) 
+        while isempty(n)
+            [m,n]=find(G==T(P1(i,j)+1)+h);
+            if P1(i,j)+1+h>256
+                while isempty(n)
+                    [m,n]=find(G==T(P1(i,j)+1)-l);
+                    l=l+1;
+                end
+            end
+            h=h+1;
+        end
+        %框住中间部分
+        P(i,j)=n(1);
+    end
+end
+figure
+imshow(P,[0,255])
+
+%直方图局部增强
+
+function P=LocalHisto(p,m) %p为输入图像，m为局部块（正方形）大小
+[row,column]=size(p);
+P=zeros(row,column);
+p1=zeros(row+(m-1),column+(m-1));
+for i=1:row
+    for j=1:column
+        p1(i+(m-1)/2,j+(m-1)/2)=p(i,j);
+    end
+end
+for i=1:row
+    for j=1:column
+        y=zeros(1,256);
+        for k=1:m-1
+            for h=1:m-1
+                y(p1(i+k,j+h)+1)=y(p1(i+k,j+h)+1)+1;
+            end
+        end
+        n=0;
+        for num=1:p1(i-1+(m+1)/2,j-1+(m+1)/2)+1
+            n=n+y(num);
+        end
+        T=round(255/m/m*n);
+        P(i,j)=T;
+    end
+end
+figure 
+imshow(P,[0,255]);
+title('局部直方图增强')
+
+%图像分割
+
+function P=PhotoDiv(p)  %图像矩阵
+[row,column]=size(p);
+p=double(p);
+s=zeros(1,254);
+for m=1:254
+    n1=0;n2=0;
+    m1=0;m2=0;
+    for i=1:row
+        for j=1:column
+            if(p(i,j)>=m)
+                n1=n1+1;
+                m1=m1+p(i,j);
+            else
+                n2=n2+1;
+                m2=m2+p(i,j);
+            end
+        end
+    end
+    s(1,m+1)=n1*n2*(m2/n2-m1/n1)^2;
+end
+[m,threshold]=max(s);
+threshold
+for i=1:row
+    for j=1:column
+        if p(i,j)>threshold
+            p(i,j)=255;
+        else
+            p(i,j)=0;
+        end
+    end
+end
+figure
+imshow(p,[0,255])
+
+主函数
+
+%问题1
+[picture1,map1]=imread('D:\数字图像作业\第三次\citywall.bmp');
+[picture2,map2]=imread('D:\数字图像作业\第三次\citywall1.bmp');
+[picture3,map3]=imread('D:\数字图像作业\第三次\citywall2.bmp');
+[picture11,map11]=imread('D:\数字图像作业\第三次\elain.bmp');
+[picture22,map22]=imread('D:\数字图像作业\第三次\elain1.bmp');
+[picture33,map33]=imread('D:\数字图像作业\第三次\elain2.bmp');
+[picture44,map44]=imread('D:\数字图像作业\第三次\elain3.bmp');
+[picture111,map111]=imread('D:\数字图像作业\第三次\lena.bmp');
+[picture222,map222]=imread('D:\数字图像作业\第三次\lena1.bmp');
+[picture333,map333]=imread('D:\数字图像作业\第三次\lena2.bmp');
+[picture444,map444]=imread('D:\数字图像作业\第三次\lena4.bmp');
+[picture1111,map1111]=imread('D:\数字图像作业\第三次\woman.bmp');
+[picture2222,map2222]=imread('D:\数字图像作业\第三次\woman1.bmp');
+[picture3333,map3333]=imread('D:\数字图像作业\第三次\woman2.bmp');
+p1=ind2gray(picture1,map1);
+p2=ind2gray(picture2,map2);
+p3=ind2gray(picture3,map3);
+p11=ind2gray(picture11,map11);
+p22=ind2gray(picture22,map22);
+p33=ind2gray(picture33,map33);
+p44=ind2gray(picture44,map44);
+p111=ind2gray(picture111,map111);
+p222=ind2gray(picture222,map222);
+p333=ind2gray(picture333,map333);
+p444=ind2gray(picture444,map444);
+p1111=ind2gray(picture1111,map1111);
+p2222=ind2gray(picture2222,map2222);
+p3333=ind2gray(picture3333,map3333);
+figure
+imshow(p1);
+title('Citywall')
+figure
+imshow(p2);
+title('Citywall 1')
+figure
+imshow(p3);
+title('Citywall 2')
+figure
+imshow(p11);
+title(' elain')
+figure
+imshow(p22);
+title(' elain 1')
+figure
+imshow(p33);
+title(' elain 2')
+figure
+imshow(p44);
+title(' elain 3')
+figure
+imshow(p111);
+title('lena ')
+figure
+imshow(p222);
+title('lena 1')
+figure
+imshow(p333);
+title('lena 2')
+figure
+imshow(p444);
+title('lena 4')
+figure
+imshow(p1111);
+title('woman ')
+figure
+imshow(p2222);
+title('woman 1')
+figure
+imshow(p3333);
+title('woman 2')
+DrawHistogram(p1,8);
+title('Histogram Citywall')
+DrawHistogram(p2,8);
+title('Histogram Citywall 1')
+DrawHistogram(p3,8);
+title('Histogram Citywall 2')
+DrawHistogram(p11,8);
+title('Histogram elain')
+DrawHistogram(p22,8);
+title('Histogram elain 1')
+DrawHistogram(p33,8);
+title('Histogram elain 2')
+DrawHistogram(p44,8);
+title('Histogram elain 3')
+DrawHistogram(p111,8);
+title('Histogram lena')
+DrawHistogram(p222,8);
+title('Histogram lena 1')
+DrawHistogram(p333,8);
+title('Histogram lena 2')
+DrawHistogram(p444,8);
+title('Histogram lena 4')
+DrawHistogram(p1111,8);
+title('Histogram woman')
+DrawHistogram(p2222,8);
+title('Histogram woman 1')
+DrawHistogram(p3333,8);
+title('Histogram woman 2')
+
+
+%问题2
+
+[picture1,map1]=imread('D:\数字图像作业\第三次\citywall.bmp');
+[picture2,map2]=imread('D:\数字图像作业\第三次\citywall1.bmp');
+[picture3,map3]=imread('D:\数字图像作业\第三次\citywall2.bmp');
+[picture11,map11]=imread('D:\数字图像作业\第三次\elain.bmp');
+[picture22,map22]=imread('D:\数字图像作业\第三次\elain1.bmp');
+[picture33,map33]=imread('D:\数字图像作业\第三次\elain2.bmp');
+[picture44,map44]=imread('D:\数字图像作业\第三次\elain3.bmp');
+[picture111,map111]=imread('D:\数字图像作业\第三次\lena.bmp');
+[picture222,map222]=imread('D:\数字图像作业\第三次\lena1.bmp');
+[picture333,map333]=imread('D:\数字图像作业\第三次\lena2.bmp');
+[picture444,map444]=imread('D:\数字图像作业\第三次\lena4.bmp');
+[picture1111,map1111]=imread('D:\数字图像作业\第三次\woman.bmp');
+[picture2222,map2222]=imread('D:\数字图像作业\第三次\woman1.bmp');
+[picture3333,map3333]=imread('D:\数字图像作业\第三次\woman2.bmp');
+p1=ind2gray(picture1,map1);
+p2=ind2gray(picture2,map2);
+p3=ind2gray(picture3,map3);
+p11=ind2gray(picture11,map11);
+p22=ind2gray(picture22,map22);
+p33=ind2gray(picture33,map33);
+p44=ind2gray(picture44,map44);
+p111=ind2gray(picture111,map111);
+p222=ind2gray(picture222,map222);
+p333=ind2gray(picture333,map333);
+p444=ind2gray(picture444,map444);
+p1111=ind2gray(picture1111,map1111);
+p2222=ind2gray(picture2222,map2222);
+p3333=ind2gray(picture3333,map3333);
+figure
+imshow(p1);
+title('Citywall')
+figure
+imshow(p2);
+title('Citywall 1')
+figure
+imshow(p3);
+title('Citywall 2')
+figure
+imshow(p11);
+title(' elain')
+figure
+imshow(p22);
+title(' elain 1')
+figure
+imshow(p33);
+title(' elain 2')
+figure
+imshow(p44);
+title(' elain 3')
+figure
+imshow(p111);
+title('lena ')
+figure
+imshow(p222);
+title('lena 1')
+figure
+imshow(p333);
+title('lena 2')
+figure
+imshow(p444);
+title('lena 4')
+figure
+imshow(p1111);
+title('woman ')
+figure
+imshow(p2222);
+title('woman 1')
+figure
+imshow(p3333);
+title('woman 2')
+HistoEqual(p1);
+title('HistoEqual Citywall')
+HistoEqual(p2);
+title('HistoEqual Citywall 1')
+HistoEqual(p3);
+title('HistoEqual Citywall 2')
+HistoEqual(p11);
+title('HistoEqualelain')
+HistoEqual(p22);
+title('HistoEqual elain 1')
+HistoEqual(p33);
+title('HistoEqual elain 2')
+HistoEqual(p44);
+title('HistoEqual elain 3')
+HistoEqual(p111);
+title('HistoEqual lena')
+HistoEqual(p222);
+title('HistoEqual lena 1')
+HistoEqual(p333);
+title('HistoEqual lena 2')
+HistoEqual(p444);
+title('HistoEqual lena 4')
+HistoEqual(p1111);
+title('HistoEqual woman')
+HistoEqual(p2222);
+title('HistoEqual woman 1')
+HistoEqual(p3333);
+title('HistoEqual woman 2')
+
+%问题3
+
+[picture1,map1]=imread('D:\数字图像作业\第三次\citywall.bmp');
+[picture2,map2]=imread('D:\数字图像作业\第三次\citywall1.bmp');
+[picture3,map3]=imread('D:\数字图像作业\第三次\citywall2.bmp');
+[picture11,map11]=imread('D:\数字图像作业\第三次\elain.bmp');
+[picture22,map22]=imread('D:\数字图像作业\第三次\elain1.bmp');
+[picture33,map33]=imread('D:\数字图像作业\第三次\elain2.bmp');
+[picture44,map44]=imread('D:\数字图像作业\第三次\elain3.bmp');
+[picture111,map111]=imread('D:\数字图像作业\第三次\lena.bmp');
+[picture222,map222]=imread('D:\数字图像作业\第三次\lena1.bmp');
+[picture333,map333]=imread('D:\数字图像作业\第三次\lena2.bmp');
+[picture444,map444]=imread('D:\数字图像作业\第三次\lena4.bmp');
+[picture1111,map1111]=imread('D:\数字图像作业\第三次\woman.bmp');
+[picture2222,map2222]=imread('D:\数字图像作业\第三次\woman1.bmp');
+[picture3333,map3333]=imread('D:\数字图像作业\第三次\woman2.bmp');
+p1=ind2gray(picture1,map1);
+p2=ind2gray(picture2,map2);
+p3=ind2gray(picture3,map3);
+p11=ind2gray(picture11,map11);
+p22=ind2gray(picture22,map22);
+p33=ind2gray(picture33,map33);
+p44=ind2gray(picture44,map44);
+p111=ind2gray(picture111,map111);
+p222=ind2gray(picture222,map222);
+p333=ind2gray(picture333,map333);
+p444=ind2gray(picture444,map444);
+p1111=ind2gray(picture1111,map1111);
+p2222=ind2gray(picture2222,map2222);
+p3333=ind2gray(picture3333,map3333);
+figure
+imshow(p1);
+title('Citywall')
+figure
+imshow(p11);
+title(' elain')
+figure
+imshow(p111);
+title('lena ')
+figure
+imshow(p1111);
+title('woman ')
+figure
+HistoMatch(p2,p1);
+title('HistoMatch Citywall 1')
+HistoMatch(p3,p1);
+title('HistoMatch Citywall 2')
+HistoMatch(p22,p11);
+title('HistoMatch elain 1')
+HistoMatch(p33,p11);
+title('HistoMatch elain 2')
+HistoMatch(p44,p11);
+title('HistoMatch elain 3')
+HistoMatch(p222,p111);
+title('HistoMatch lena 1')
+HistoMatch(p333,p111);
+title('HistoMatch lena 2')
+HistoMatch(p444,p111);
+title('HistoMatch lena 4')
+HistoMatch(p2222,p1111);
+title('HistoMatch woman 1')
+HistoMatch(p3333,p1111);
+title('HistoMatch woman 2')
+
+%问题4
+
+[picture11,map11]=imread('D:\数字图像作业\第三次\elain.bmp');
+[picture111,map111]=imread('D:\数字图像作业\第三次\lena.bmp');
+p11=ind2gray(picture11,map11);
+p111=ind2gray(picture111,map111);
+figure
+imshow(p11);
+title(' elain')
+figure
+imshow(p111);
+title('lena ')
+LocalHisto(p11,7);
+title('局部直方图增强,elain')
+LocalHisto(p111,7);
+title('局部直方图增强,lena')
+
+%问题5
+[picture11,map11]=imread('D:\数字图像作业\第三次\elain.bmp');
+[picture1111,map1111]=imread('D:\数字图像作业\第三次\woman.bmp');
+p1111=ind2gray(picture1111,map1111);
+p11=ind2gray(picture11,map11);
+figure
+imshow(p11);
+title(' elain')
+figure
+imshow(p1111);
+title('woman ')
+PhotoDiv(p11) ;
+title('图像分割后 elain ')
+PhotoDiv(p1111) ;
+title('图像分割后 woman ')
+
